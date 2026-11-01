@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
-import { createTodo } from "./todos.service";
-import { getAllTodos } from "./todos.service";
-import { createTodoSchema, getTodosSchema } from "./todos.schema";
+import { createTodoSchema, getTodosSchema, updateTodoSchema } from "./todos.schema";
+import { createTodo, getAllTodos, updateTodo } from "./todos.service";
 
 export function createTodoController(
   req: Request,
@@ -55,6 +54,56 @@ export function getAllTodosController(
     });
   } catch (error) {
     console.error("Fetching todos error:", error);
+
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+}
+
+export function updateTodoController(
+  req: Request,
+  res: Response
+): void {
+  const validation = updateTodoSchema.safeParse(req.body);
+
+  if (!validation.success) {
+    res.status(400).json({
+      error: "Invalid request",
+      details: validation.error.flatten().fieldErrors,
+    });
+    return;
+  }
+
+  const todoId = Number(req.params.id);
+
+  if (!Number.isInteger(todoId) || todoId <= 0) {
+    res.status(400).json({
+      error: "Invalid todo ID",
+    });
+    return;
+  }
+
+  try {
+    const todo = updateTodo(
+      todoId,
+      req.user!.id,
+      validation.data
+    );
+
+    if (!todo) {
+      res.status(404).json({
+        error: "Todo not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Todo updated successfully",
+      todo,
+    });
+  } catch (error) {
+    console.error("Todo update error:", error);
 
     res.status(500).json({
       error: "Internal server error",

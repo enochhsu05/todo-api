@@ -84,3 +84,59 @@ export function getAllTodos(filters: GetTodosFilters) {
 
   return db.prepare(query).all(...params);
 }
+
+interface UpdateTodoInput {
+  title?: string;
+  description?: string | null;
+  category?: string | null;
+  completed?: boolean;
+}
+
+export function updateTodo(
+  todoId: number,
+  userId: number,
+  input: UpdateTodoInput
+) {
+  const fields: string[] = [];
+  const params: (string | number | null)[] = [];
+
+  if (input.title !== undefined) {
+    fields.push("title = ?");
+    params.push(input.title);
+  }
+
+  if (input.description !== undefined) {
+    fields.push("description = ?");
+    params.push(input.description);
+  }
+
+  if (input.category !== undefined) {
+    fields.push("category = ?");
+    params.push(input.category);
+  }
+
+  if (input.completed !== undefined) {
+    fields.push("completed = ?");
+    params.push(input.completed ? 1 : 0);
+  }
+
+  fields.push("updated_at = CURRENT_TIMESTAMP");
+
+  params.push(todoId, userId);
+
+  const result = db
+    .prepare(`
+      UPDATE todos
+      SET ${fields.join(", ")}
+      WHERE id = ? AND user_id = ?
+    `)
+    .run(...params);
+
+  if (result.changes === 0) {
+    return null;
+  }
+
+  return db
+    .prepare("SELECT * FROM todos WHERE id = ?")
+    .get(todoId);
+}
