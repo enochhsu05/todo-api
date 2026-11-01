@@ -140,3 +140,17 @@ export function updateTodo(
     .prepare("SELECT * FROM todos WHERE id = ?")
     .get(todoId);
 }
+
+export function deleteTodo(
+  todoId: number,
+  userId: number
+): boolean {
+  const result = db
+    .prepare(`
+      DELETE FROM todos
+      WHERE id = ? AND user_id = ?
+    `)
+    .run(todoId, userId);
+
+  return result.changes > 0;
+}

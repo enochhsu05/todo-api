@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { createTodoSchema, getTodosSchema, updateTodoSchema } from "./todos.schema";
-import { createTodo, getAllTodos, updateTodo } from "./todos.service";
+import { createTodo, getAllTodos, updateTodo, deleteTodo } from "./todos.service";
 
 export function createTodoController(
   req: Request,
@@ -104,6 +104,41 @@ export function updateTodoController(
     });
   } catch (error) {
     console.error("Todo update error:", error);
+
+    res.status(500).json({
+      error: "Internal server error",
+    });
+  }
+}
+
+export function deleteTodoController(
+  req: Request,
+  res: Response
+): void {
+  const todoId = Number(req.params.id);
+
+  if (!Number.isInteger(todoId) || todoId <= 0) {
+    res.status(400).json({
+      error: "Invalid todo ID",
+    });
+    return;
+  }
+
+  try {
+    const deleted = deleteTodo(todoId, req.user!.id);
+
+    if (!deleted) {
+      res.status(404).json({
+        error: "Todo not found",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      message: "Todo deleted successfully",
+    });
+  } catch (error) {
+    console.error("Todo deletion error:", error);
 
     res.status(500).json({
       error: "Internal server error",
